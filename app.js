@@ -69,6 +69,7 @@ async function run({ append = false } = {}) {
   setStatus(query ? `Searching for “${query}”…` : "Loading the most downloaded books…");
   try {
     const res = await backend.search(query, { page, language, signal: controller.signal });
+    $("source").textContent = res.source;
     results.append(...res.books.map(renderBook));
     const shown = results.children.length;
     if (!shown) setStatus(`No books found for “${query}”. Try fewer words or just an author’s last name.`);
@@ -76,7 +77,7 @@ async function run({ append = false } = {}) {
     else setStatus("Most downloaded books. Search by title or author above.");
     more.hidden = !res.hasMore;
   } catch (err) {
-    if (err.name === "AbortError") return;
+    if (controller.signal.aborted) return;
     setStatus("The book search didn’t respond. Check your connection and try again.", query);
   }
 }

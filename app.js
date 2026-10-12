@@ -1,4 +1,4 @@
-import * as backend from "./backends/index.js";
+import * as backend from "./backends/index.js?v=3";
 
 const $ = (id) => document.getElementById(id);
 const form = $("form"), q = $("q"), lang = $("lang");

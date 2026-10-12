@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14171c" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Shelf">
+<title>Shelf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,600&display=swap">
+<style>
+  /* Layout: one narrow reading column; a sticky search bar on top, a plain list of books below. */
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --ink: #1b2028;
+    --muted: #5d6676;
+    --line: #dde1e8;
+    --accent: #2a4f8f;
+    --accent-ink: #ffffff;
+    --display: "Literata", Georgia, "Times New Roman", serif;
+    --body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171c; --surface: #1c2027; --ink: #e8ebf0; --muted: #9aa3b2;
+      --line: #2c323c; --accent: #8fb0ea; --accent-ink: #10151d; color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 var(--body);
+    padding: 0 16px env(safe-area-inset-bottom, 0px);
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  header {
+    position: sticky; top: 0; z-index: 2; background: var(--bg);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 14px); padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  h1 { font: 600 1.35rem/1 var(--display); margin: 0; letter-spacing: -0.01em; }
+  .source { color: var(--muted); font-size: 0.8rem; }
+  form { display: flex; gap: 8px; }
+  input[type="search"] {
+    flex: 1; min-width: 0; font: inherit; font-size: 17px; /* 16px+ stops iOS from zooming in */
+    padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--surface); color: var(--ink); -webkit-appearance: none; appearance: none;
+  }
+  select {
+    font: inherit; font-size: 15px; padding: 0 8px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--surface); color: var(--ink); max-width: 7.5rem;
+  }
+  input:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .status { color: var(--muted); font-size: 0.9rem; padding: 14px 0 4px; min-height: 1.5em; }
+  .status a { color: var(--accent); }
+  ol { list-style: none; margin: 0; padding: 0; }
+  li.book {
+    display: grid; grid-template-columns: 64px 1fr; gap: 14px;
+    padding: 16px 0; border-bottom: 1px solid var(--line);
+  }
+  .cover {
+    width: 64px; aspect-ratio: 2 / 3; border-radius: 4px; overflow: hidden;
+    background: var(--line); display: grid; place-items: center;
+    color: var(--muted); font: 600 0.6rem/1.2 var(--display); text-align: center; padding: 4px; overflow-wrap: anywhere;
+  }
+  .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .info { min-width: 0; }
+  .title { font: 600 1.05rem/1.3 var(--display); margin: 0 0 2px; overflow-wrap: anywhere; }
+  .title a { color: inherit; text-decoration: none; }
+  .meta { color: var(--muted); font-size: 0.88rem; margin: 0 0 10px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+  .actions a {
+    font-size: 0.85rem; text-decoration: none; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--ink); background: var(--surface);
+  }
+  .actions a.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .more {
+    display: block; width: 100%; margin: 18px 0 28px; padding: 12px; font: inherit;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  footer { color: var(--muted); font-size: 0.78rem; padding: 8px 0 28px; }
+  footer a { color: inherit; }
+  @media (prefers-reduced-motion: no-preference) { li.book { animation: in 160ms ease-out; } }
+  @keyframes in { from { opacity: 0.4; } to { opacity: 1; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Shelf</h1>
+      <span class="source" id="source"></span>
+    </div>
+    <form id="form" role="search">
+      <input id="q" type="search" placeholder="Title or author" autocomplete="off" autocapitalize="off" enterkeyhint="search" aria-label="Search books">
+      <select id="lang" aria-label="Language">
+        <option value="">All</option>
+        <option value="en">English</option>
+        <option value="fr">French</option>
+        <option value="de">German</option>
+        <option value="es">Spanish</option>
+        <option value="it">Italian</option>
+        <option value="pt">Portuguese</option>
+        <option value="nl">Dutch</option>
+        <option value="fi">Finnish</option>
+      </select>
+    </form>
+  </header>
+  <main>
+    <p class="status" id="status" aria-live="polite"></p>
+    <ol id="results"></ol>
+    <button class="more" id="more" type="button" hidden>Show more</button>
+  </main>
+  <footer>
+    Free public-domain books from <a href="https://www.gutenberg.org" target="_blank" rel="noopener">Project Gutenberg</a>, searched through <a href="https://gutendex.com" target="_blank" rel="noopener">Gutendex</a>.
+  </footer>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

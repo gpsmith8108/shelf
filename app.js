@@ -1,8 +1,8 @@
-import * as backend from "./backends/index.js?v=3";
+import * as backend from "./backends/index.js?v=4";
 
 const $ = (id) => document.getElementById(id);
 const form = $("form"), q = $("q"), lang = $("lang");
-const statusEl = $("status"), results = $("results"), more = $("more");
+const noticeEl = $("notice"), statusEl = $("status"), results = $("results"), more = $("more");
 
 $("source").textContent = backend.name;
 
@@ -58,11 +58,36 @@ function setStatus(text, fallbackQuery) {
   }
 }
 
+// Shown in place of results when a search comes back empty or the search service is down.
+function notice(heading, body, links) {
+  const box = el("div", { class: "notice", role: "status" },
+    el("p", { class: "notice-title" }, heading),
+    el("p", {}, body),
+  );
+  if (links.length) box.append(el("div", { class: "actions" }, ...links.map(([href, text]) => link(href, text))));
+  noticeEl.replaceChildren(box);
+  noticeEl.hidden = false;
+}
+
+function notFound(query, language) {
+  const q = encodeURIComponent(query);
+  notice(
+    `Can’t find “${query}”`,
+    (language ? "Nothing matched in the language you picked. " : "") +
+      "It may not be in the free collection. Most books published after 1930 are still under copyright, so they aren’t here. Check the spelling, or try just the author’s last name.",
+    [
+      [backend.fallbackUrl(query), "Search Gutenberg directly"],
+      [`https://openlibrary.org/search?q=${q}`, "Look it up on Open Library"],
+    ],
+  );
+}
+
 async function run({ append = false } = {}) {
   controller?.abort();
   controller = new AbortController();
   const { query, language, page } = current;
   if (!append) {
+    noticeEl.hidden = true;
     results.replaceChildren();
     more.hidden = true;
   }
@@ -72,13 +97,21 @@ async function run({ append = false } = {}) {
     $("source").textContent = res.source;
     results.append(...res.books.map(renderBook));
     const shown = results.children.length;
-    if (!shown) setStatus(`No books found for “${query}”. Try fewer words or just an author’s last name.`);
+    if (!shown) {
+      setStatus("");
+      notFound(query, language);
+    }
     else if (query) setStatus(`${res.total.toLocaleString()} book${res.total === 1 ? "" : "s"} for “${query}”`);
     else setStatus("Most downloaded books. Search by title or author above.");
-    more.hidden = !res.hasMore;
+    more.hidden = !res.hasMore || !shown;
   } catch (err) {
     if (controller.signal.aborted) return;
-    setStatus("The book search didn’t respond. Check your connection and try again.", query);
+    setStatus("");
+    notice(
+      "Search isn’t responding",
+      "The book search services didn’t answer, so this doesn’t mean the book is missing. Check your connection and try again.",
+      query ? [[backend.fallbackUrl(query), "Search Gutenberg directly"]] : [],
+    );
   }
 }
 
